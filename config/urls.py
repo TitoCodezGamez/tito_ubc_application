@@ -17,11 +17,14 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
+
 from main import views as main_views
+from main.views_password import password
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', main_views.home, name='home'),
     path('autosave/', main_views.autosave, name='autosave'),
     path('save_response/', main_views.save_response, name='save_response'),
+    path('password/', password, name='password'),
 ]
