@@ -1,0 +1,215 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tito's UBC Application</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<style>
+    .p-3 {
+        background-color: #ffffff;
+    }
+</style>
+<body style="background-color: #f5f6fa;">
+<div class="container mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-0">Tito's UBC Application</h1>
+                <div>
+                        <label for="response_selector" class="form-label me-2">Saved Responses:</label>
+                        <select id="response_selector" class="form-select d-inline-block w-auto" onchange="onResponseChange()">
+                                <option value="new" {% if selected_response == 'new' %}selected{% endif %}>New Response</option>
+                                {% for resp in all_responses %}
+                                <option value="{{ resp }}" {% if selected_response == resp %}selected{% endif %}>{{ resp }}</option>
+                                {% endfor %}
+                        </select>
+                </div>
+        </div>
+
+        <!-- Save Modal -->
+        <div class="modal fade" id="saveModal" tabindex="-1" aria-labelledby="saveModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="saveModalLabel">Save Response</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label for="saveNameInput" class="form-label">Enter a name for this response:</label>
+                        <input type="text" class="form-control" id="saveNameInput" />
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="saveResponseName()">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="about" class="form-label">Tell us about who you are. How would your family, friends, and/or members of your community describe you? If possible, please include something about yourself that you are most proud of and why.</label>
+            <textarea class="form-control autosave-textarea" id="about" name="about" maxlength="1500" rows="8" oninput="updateCharCount(this)">{{ entries.about.text|default_if_none:'' }}</textarea>
+            <div class="form-text"><span id="about_count">0</span>/1500 characters</div>
+        </div>
+        <div class="mb-3">
+            <label for="important" class="form-label">What is important to you? Why?</label>
+            <textarea class="form-control autosave-textarea" id="important" name="important" maxlength="1500" rows="8" oninput="updateCharCount(this)">{{ entries.important.text|default_if_none:'' }}</textarea>
+            <div class="form-text"><span id="important_count">0</span>/1500 characters</div>
+        </div>
+        <h4 class="mt-4">Activities and Accomplishments</h4>
+        {% with activity_range="1,2,3,4,5" %}
+        {% for i in activity_range|cut:"," %}{% endfor %}
+        {% for activity in activities %}
+        <div class="border rounded p-3 mb-3">
+            <div class="mb-2">
+                <label for="activity_type_{{ forloop.counter }}" class="form-label">Activity {{ forloop.counter }} Type</label>
+                <select class="form-select" id="activity_type_{{ forloop.counter }}" name="activity_type_{{ forloop.counter }}">
+                    <option value="">Select type</option>
+                    <option{% if activity.dropdown == 'Athletics' %} selected{% endif %}>Athletics</option>
+                    <option{% if activity.dropdown == 'Clubs' %} selected{% endif %}>Clubs</option>
+                    <option{% if activity.dropdown == 'Creative and performing arts' %} selected{% endif %}>Creative and performing arts</option>
+                    <option{% if activity.dropdown == 'Family and community' %} selected{% endif %}>Family and community</option>
+                    <option{% if activity.dropdown == 'Service to others' %} selected{% endif %}>Service to others</option>
+                    <option{% if activity.dropdown == 'Volunteering' %} selected{% endif %}>Volunteering</option>
+                    <option{% if activity.dropdown == 'Work or employment' %} selected{% endif %}>Work or employment</option>
+                    <option{% if activity.dropdown == 'Other' %} selected{% endif %}>Other</option>
+                </select>
+            </div>
+            <div>
+                <label for="activity_desc_{{ forloop.counter }}" class="form-label">Short description of the activity</label>
+                <textarea class="form-control autosave-textarea" id="activity_desc_{{ forloop.counter }}" name="activity_desc_{{ forloop.counter }}" maxlength="500" rows="4" oninput="updateCharCount(this)">{{ activity.desc|default_if_none:'' }}</textarea>
+                <div class="form-text"><span id="activity_desc_{{ forloop.counter }}_count">0</span>/500 characters</div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endwith %}
+        <div class="mb-3">
+            <label for="important_activities" class="form-label">Tell us more about ONE or TWO activities listed above that are most important to you. Please explain the role you played and what you learned in the process. You will be asked for a reference who can speak to your response.</label>
+            <textarea class="form-control autosave-textarea" id="important_activities" name="important_activities" maxlength="2100" rows="10" oninput="updateCharCount(this)">{{ entries.important_activities.text|default_if_none:'' }}</textarea>
+            <div class="form-text"><span id="important_activities_count">0</span>/2100 characters</div>
+        </div>
+        <div class="mb-3">
+            <label for="academic_history" class="form-label">You may wish to use the space below to provide UBC with more information on your academic history to date and/or your future academic plans. For example: How did you choose your courses in secondary school? Are there life circumstances that have affected your academic decisions to date? What have you done to prepare yourself specifically for your intended area of study at UBC?</label>
+            <textarea class="form-control autosave-textarea" id="academic_history" name="academic_history" maxlength="600" rows="6" oninput="updateCharCount(this)">{{ entries.academic_history.text|default_if_none:'' }}</textarea>
+            <div class="form-text"><span id="academic_history_count">0</span>/600 characters</div>
+        </div>
+        {% if selected_response == 'new' %}
+        <button type="submit" class="btn btn-primary">Submit</button>
+        <br><br>
+        {% endif %}
+    </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Character counter
+function updateCharCount(textarea) {
+    var countId = textarea.id + '_count';
+    var counter = document.getElementById(countId);
+    if (counter) {
+        counter.textContent = textarea.value.length;
+    }
+}
+
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
+
+// Autosave AJAX
+function autosave(name, value, dropdown) {
+    fetch('/autosave/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            name: name,
+            text: value,
+            dropdown: dropdown || '',
+            response_name: getCurrentResponseName()
+        })
+    });
+}
+
+function getCurrentResponseName() {
+    const sel = document.getElementById('response_selector');
+    if (!sel) return null;
+    return sel.value === 'new' ? null : sel.value;
+}
+
+function onResponseChange() {
+    const sel = document.getElementById('response_selector');
+    if (sel) {
+        const val = sel.value;
+        if (val === 'new') {
+            window.location.href = '?response=new';
+        } else {
+            window.location.href = '?response=' + encodeURIComponent(val);
+        }
+    }
+}
+
+// Save modal logic
+function showSaveModal() {
+    var modal = new bootstrap.Modal(document.getElementById('saveModal'));
+    document.getElementById('saveNameInput').value = '';
+    modal.show();
+}
+
+function saveResponseName() {
+    var name = document.getElementById('saveNameInput').value.trim();
+    if (!name) return;
+    fetch('/save_response/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({response_name: name})
+    }).then(() => {
+        window.location.href = '?response=' + encodeURIComponent(name);
+    });
+}
+
+const debouncedAutosave = debounce(autosave, 300);
+
+// Attach autosave to all textareas
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.autosave-textarea').forEach(function(textarea) {
+        updateCharCount(textarea);
+        textarea.addEventListener('input', function() {
+            let dropdown = null;
+            if (textarea.id.startsWith('activity_desc_')) {
+                let idx = textarea.id.replace('activity_desc_', '');
+                let dd = document.getElementById('activity_type_' + idx);
+                dropdown = dd ? dd.value : '';
+            }
+            debouncedAutosave(textarea.id, textarea.value, dropdown);
+        });
+    });
+    // Attach autosave to all dropdowns
+    document.querySelectorAll('select.form-select').forEach(function(select) {
+        select.addEventListener('change', function() {
+            let idx = select.id.replace('activity_type_', '');
+            let textarea = document.getElementById('activity_desc_' + idx);
+            let text = textarea ? textarea.value : '';
+            debouncedAutosave(select.id, text, select.value);
+        });
+    });
+    // Intercept form submit to show save modal
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        showSaveModal();
+    });
+});
+</script>
+</body>
+</html>
