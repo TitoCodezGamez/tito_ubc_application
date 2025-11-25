@@ -21,6 +21,17 @@ def save_response(request):
 def home(request):
     selected_response = request.GET.get('response')
     all_responses = list(Response.objects.values_list('name', flat=True).order_by('created'))
+
+    # If not specified, try to load last edited from session
+    if not selected_response:
+        selected_response = request.session.get('last_edited_response', None)
+    # If still not set, default to 'new'
+    if not selected_response:
+        selected_response = 'new'
+
+    # Save the selected response in session for next time
+    request.session['last_edited_response'] = selected_response
+
     if selected_response and selected_response != 'new':
         try:
             response_obj = Response.objects.get(name=selected_response)
@@ -39,7 +50,7 @@ def home(request):
         'entries': entries,
         'activities': activities,
         'all_responses': all_responses,
-        'selected_response': selected_response or 'new',
+        'selected_response': selected_response,
     })
 
 @csrf_exempt
