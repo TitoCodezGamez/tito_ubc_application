@@ -1,3 +1,7 @@
+# CSRF trusted origins for Railway deployment
+CSRF_TRUSTED_ORIGINS = [
+    'https://titoubcapplication-production.up.railway.app',
+]
 """
 Django settings for config project.
 
