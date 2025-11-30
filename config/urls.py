@@ -26,5 +26,6 @@ urlpatterns = [
     path('', main_views.home, name='home'),
     path('autosave/', main_views.autosave, name='autosave'),
     path('save_response/', main_views.save_response, name='save_response'),
+    path('toggle_dark_mode/', main_views.toggle_dark_mode, name='toggle_dark_mode'),
     path('password/', password, name='password'),
 ]

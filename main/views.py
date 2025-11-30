@@ -46,12 +46,22 @@ def home(request):
         desc = entries.get(f'activity_desc_{i}', {'text': ''})['text']
         dropdown = entries.get(f'activity_type_{i}', {'dropdown': ''})['dropdown']
         activities.append({'desc': desc, 'dropdown': dropdown})
+    dark_mode = request.session.get('dark_mode', False)
     return render(request, 'main/home.html', {
         'entries': entries,
         'activities': activities,
         'all_responses': all_responses,
         'selected_response': selected_response,
+        'dark_mode': dark_mode,
     })
+
+@csrf_exempt
+def toggle_dark_mode(request):
+    if request.method == 'POST':
+        current = request.session.get('dark_mode', False)
+        request.session['dark_mode'] = not current
+        return JsonResponse({'status': 'ok', 'dark_mode': not current})
+    return JsonResponse({'status': 'error'}, status=400)
 
 @csrf_exempt
 def autosave(request):

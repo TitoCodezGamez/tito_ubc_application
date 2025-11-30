@@ -1,6 +1,6 @@
 {% extends 'main/base.html' %}
 {% load static %}
-{% block title %}Tito and Ella's UBC Application{% endblock %}
+{% block title %}{% if selected_response == 'new' %}New Response{% else %}{{ selected_response }}{% endif %}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -13,15 +13,18 @@
 {% block content %}
 <div class="container mt-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="mb-0">Tito and Ella's UBC Application</h1>
-                <div>
-                        <label for="response_selector" class="form-label me-2">Saved Responses:</label>
-                        <select id="response_selector" class="form-select d-inline-block w-auto" onchange="onResponseChange()">
+                <h1 class="mb-0">{% if selected_response == 'new' %}New Response{% else %}{{ selected_response }}{% endif %}</h1>
+                <div class="d-flex align-items-center">
+                        <label for="response_selector" class="form-label me-2 mb-0">Saved Responses:</label>
+                        <select id="response_selector" class="form-select d-inline-block w-auto me-3" onchange="onResponseChange()">
                                 <option value="new" {% if selected_response == 'new' %}selected{% endif %}>New Response</option>
                                 {% for resp in all_responses %}
                                 <option value="{{ resp }}" {% if selected_response == resp %}selected{% endif %}>{{ resp }}</option>
                                 {% endfor %}
                         </select>
+                        <button type="button" class="btn btn-outline-secondary" id="darkModeToggle" onclick="toggleDarkMode()">
+                                {% if dark_mode %}🌙{% else %}☀️{% endif %}
+                        </button>
                 </div>
         </div>
 
@@ -48,12 +51,12 @@
         {% csrf_token %}
         <div class="mb-3">
             <label for="about" class="form-label">Tell us about who you are. How would your family, friends, and/or members of your community describe you? If possible, please include something about yourself that you are most proud of and why.</label>
-            <textarea class="form-control autosave-textarea" id="about" name="about" maxlength="1500" rows="8" oninput="updateCharCount(this)">{{ entries.about.text|default_if_none:'' }}</textarea>
+            <textarea class="form-control autosave-textarea" id="about" name="about" data-limit="1500" rows="8" oninput="updateCharCount(this)" spellcheck="true">{{ entries.about.text|default_if_none:'' }}</textarea>
             <div class="form-text"><span id="about_count">0</span>/1500 characters</div>
         </div>
         <div class="mb-3">
             <label for="important" class="form-label">What is important to you? Why?</label>
-            <textarea class="form-control autosave-textarea" id="important" name="important" maxlength="1500" rows="8" oninput="updateCharCount(this)">{{ entries.important.text|default_if_none:'' }}</textarea>
+            <textarea class="form-control autosave-textarea" id="important" name="important" data-limit="1500" rows="8" oninput="updateCharCount(this)" spellcheck="true">{{ entries.important.text|default_if_none:'' }}</textarea>
             <div class="form-text"><span id="important_count">0</span>/1500 characters</div>
         </div>
         <h4 class="mt-4">Activities and Accomplishments</h4>
@@ -77,7 +80,7 @@
             </div>
             <div>
                 <label for="activity_desc_{{ forloop.counter }}" class="form-label">Short description of the activity</label>
-                <textarea class="form-control autosave-textarea" id="activity_desc_{{ forloop.counter }}" name="activity_desc_{{ forloop.counter }}" maxlength="500" rows="4" oninput="updateCharCount(this)">{{ activity.desc|default_if_none:'' }}</textarea>
+                <textarea class="form-control autosave-textarea" id="activity_desc_{{ forloop.counter }}" name="activity_desc_{{ forloop.counter }}" data-limit="500" rows="4" oninput="updateCharCount(this)" spellcheck="true">{{ activity.desc|default_if_none:'' }}</textarea>
                 <div class="form-text"><span id="activity_desc_{{ forloop.counter }}_count">0</span>/500 characters</div>
             </div>
         </div>
@@ -85,12 +88,12 @@
         {% endwith %}
         <div class="mb-3">
             <label for="important_activities" class="form-label">Tell us more about ONE or TWO activities listed above that are most important to you. Please explain the role you played and what you learned in the process. You will be asked for a reference who can speak to your response.</label>
-            <textarea class="form-control autosave-textarea" id="important_activities" name="important_activities" maxlength="2100" rows="10" oninput="updateCharCount(this)">{{ entries.important_activities.text|default_if_none:'' }}</textarea>
+            <textarea class="form-control autosave-textarea" id="important_activities" name="important_activities" data-limit="2100" rows="10" oninput="updateCharCount(this)" spellcheck="true">{{ entries.important_activities.text|default_if_none:'' }}</textarea>
             <div class="form-text"><span id="important_activities_count">0</span>/2100 characters</div>
         </div>
         <div class="mb-3">
             <label for="academic_history" class="form-label">You may wish to use the space below to provide UBC with more information on your academic history to date and/or your future academic plans. For example: How did you choose your courses in secondary school? Are there life circumstances that have affected your academic decisions to date? What have you done to prepare yourself specifically for your intended area of study at UBC?</label>
-            <textarea class="form-control autosave-textarea" id="academic_history" name="academic_history" maxlength="600" rows="6" oninput="updateCharCount(this)">{{ entries.academic_history.text|default_if_none:'' }}</textarea>
+            <textarea class="form-control autosave-textarea" id="academic_history" name="academic_history" data-limit="600" rows="6" oninput="updateCharCount(this)" spellcheck="true">{{ entries.academic_history.text|default_if_none:'' }}</textarea>
             <div class="form-text"><span id="academic_history_count">0</span>/600 characters</div>
         </div>
         {% if selected_response == 'new' %}
@@ -106,7 +109,15 @@ function updateCharCount(textarea) {
     var countId = textarea.id + '_count';
     var counter = document.getElementById(countId);
     if (counter) {
-        counter.textContent = textarea.value.length;
+        var currentLength = textarea.value.length;
+        var limit = parseInt(textarea.getAttribute('data-limit')) || 0;
+        counter.textContent = currentLength;
+        var counterParent = counter.parentElement;
+        if (currentLength > limit) {
+            counterParent.style.color = '#dc3545';
+        } else {
+            counterParent.style.color = '';
+        }
     }
 }
 
@@ -208,5 +219,20 @@ document.addEventListener('DOMContentLoaded', function() {
         showSaveModal();
     });
 });
+
+// Toggle dark mode
+function toggleDarkMode() {
+    fetch('/toggle_dark_mode/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    }).then(response => response.json()).then(data => {
+        if (data.status === 'ok') {
+            location.reload();
+        }
+    });
+}
 </script>
 {% endblock %}
